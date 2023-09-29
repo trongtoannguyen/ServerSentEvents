@@ -21,16 +21,16 @@ app.get("/sse", (req, res) => {
   let totalBTC = 0;
   // Gửi sự kiện SSE đến máy khách mỗi giây
   setInterval(() => {
-    let btcRandom =
+    let btcPrice =
       Math.floor((Math.random() * (28 - 16 + 1) + 16) * 1000) / 1000; //can use toFixed(3) to round to 3 decimal places
-    let ethRandom =
+    let ethPrice =
       Math.floor((Math.random() * (3 - 1.6 + 1) + 1.6) * 1000) / 1000;
-    totalBTC = totalBTC + btcRandom;
+    totalBTC = totalBTC + btcPrice;
     // res.write(`data: ${}\n\n`);
     // stringify data to sent to client
     let data = JSON.stringify({
-      btc: btcRandom,
-      eth: ethRandom,
+      btc: btcPrice,
+      eth: ethPrice,
       totalBTC: totalBTC,
     });
     res.write(`data: ${data}\n\n`);

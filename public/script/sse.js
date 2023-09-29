@@ -1,48 +1,66 @@
+/**
+ * @fileoverview sse.js is a client-side script that handles the event source
+ * and displays the data received from the server
+ * @since 2023-09-29
+ * @requires Plotly
+ * @requires EventSource
+ * @requires /fetch
+ * @requires /sse
+ */
 const btcData = document.getElementById("btc-data");
 const ethData = document.getElementById("eth-data");
 const totalBTC = document.getElementById("total-btc");
 const fetchData = document.getElementById("fetch-data");
 
 /**
- * url https://jsonplaceholder.typicode.com/todos/
+ * create an event source and register event handlers
  * define route to retrieve and send data from every 1 second
+ * @param {object} fetchSource - event source
+ * @param {object} chartSource - event source
  */
 const fetchSource = new EventSource("/fetch");
+const chartSource = new EventSource("/sse");
+console.log(fetchSource);
+
+/**
+ * handle data received from server
+ * @param {object} receivedData - comment from server
+ */
 fetchSource.onmessage = (event) => {
   // parse the event data
-  const receivedData = JSON.parse(event.data);
+  const body = JSON.parse(event.data).body;
   console.log(event.data);
-  console.log(receivedData);
-  fetchData.innerHTML = `${receivedData.body}`;
+  fetchData.innerHTML = `${body}`;
 };
 
-// Create a new EventSource and set the URL to '/sse' on the current host.
-const chartSource = new EventSource("/sse");
 /**
- * Display using Plotly
- * xArray for timeline
- * yArray for btc value
- * zArray for eth value
- * @type {Array<string>}
+ * difine arrays to store data
  * @param {Array<number>} xArray - timeline
- * @param {Array<number>} yArray - value
- * @param {Array<number>} zArray - value
+ * @param {Array<number>} yArray - btcValue
+ * @param {Array<number>} zArray - ethValue
  */
 const xArray = [0];
 const yArray = [0];
 const zArray = [0];
 
+/**
+ * handle data received from server
+ * @param {object} receivedData - data received from server
+ * @param {number} xArrayAtFirst - first elem of xArray
+ * @param {number} yArrayAtFirst - first elem of yArray
+ * @param {number} zArrayAtFirst - first elem of zArray
+ * @param {number} xArrayLast - last elem of xArray
+ * @param {number} yArrayLast - last elem of yArray
+ * @param {number} zArrayLast - last elem of zArray
+ */
 chartSource.onmessage = (event) => {
   const receivedData = JSON.parse(event.data);
-  /**
-   * @param {number} xArrayAtFirst - first elem of xArray
-   * @param {number} yArrayAtFirst - first elem of yArray
-   * @param {number} zArrayAtFirst - first elem of zArray
-   * @param {number} xArrayLast - last elem of xArray
-   * @param {number} yArrayLast - last elem of yArray
-   * @param {number} zArrayLast - last elem of zArray
-   * remove first element of xArray and yArray and zArray
-   */
+  //get name of receivedData's object
+  let data1 = Object.keys(receivedData)[0].toUpperCase();
+  let data2 = Object.keys(receivedData)[1].toUpperCase();
+
+  // remove first element of xArray and yArray and zArray
+  // to keep the array length at 48
   if (xArray.length > 48) {
     xArray.shift();
     yArray.shift();
@@ -61,24 +79,11 @@ chartSource.onmessage = (event) => {
   zArray.push(receivedData.eth);
   console.log(yArray);
 
-  // display data
-  if (receivedData.btc < yArrayLast) {
-    btcData.style.color = "red";
-  } else {
-    btcData.style.color = "green";
-  }
-  if (receivedData.eth < zArrayLast) {
-    ethData.style.color = "red";
-  } else {
-    ethData.style.color = "green";
-  }
-
-  btcData.innerHTML = `BTC price: ${receivedData.btc}`;
-  ethData.innerHTML = `ETH price: ${receivedData.eth}`;
   /**
-   * @param {Array<object>} data - data for Plotly
    * @param {object} trace1 - trace for Plotly
    * @param {object} trace2 - trace for Plotly
+   * @param {Array<object>} data - data for Plotly
+   * @param {object} layout - layout for Plotly
    */
   const trace1 = {
     x: xArray,
@@ -98,9 +103,6 @@ chartSource.onmessage = (event) => {
   };
 
   const data = [trace1, trace2];
-  /**
-   * @param {object} layout - layout for Plotly
-   */
   const layout = {
     xaxis: {
       range: [xArrayAtFirst, xArrayLast],
@@ -110,11 +112,26 @@ chartSource.onmessage = (event) => {
       range: [yArrayAtFirst - 15, yArrayLast + 15],
       title: "Price",
     },
-    title: "BTC Prices in 2s",
+    title: `${data1}/${data2} Prices in 2s`,
   };
 
   /**
+   * Display data
    * Plotly
    */
+
+  if (receivedData.btc < yArrayLast) {
+    btcData.style.color = "red";
+  } else {
+    btcData.style.color = "green";
+  }
+  if (receivedData.eth < zArrayLast) {
+    ethData.style.color = "red";
+  } else {
+    ethData.style.color = "green";
+  }
+
+  btcData.innerHTML = `BTC price: ${receivedData.btc}`;
+  ethData.innerHTML = `ETH price: ${receivedData.eth}`;
   Plotly.newPlot("myPlot", data, layout);
 };
